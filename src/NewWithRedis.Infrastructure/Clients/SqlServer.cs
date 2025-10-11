@@ -4,7 +4,7 @@ using Microsoft.Data.SqlClient;
 
 namespace NewsWithRedis.Infrastructure.Clients.SQL;
 
-public class SqlClient
+public sealed class SqlClient
 {
     private readonly string cString;
     private IDbConnection CreateConnection() => new SqlConnection(this.cString);

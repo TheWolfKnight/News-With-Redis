@@ -1,17 +1,17 @@
 using StackExchange.Redis;
 using System;
+using System.Text.Json;
 
-namespace RedDash.Utilities.RedConn;
+namespace NewsWithRedis.Infrastructure.Clients.RED;
 
-public class RedConn : IDisposable
+public sealed class RedConn
 {
-    private readonly ConnectionMultiplexer conn;
-    private readonly IDatabase db;
+    private readonly IDatabase db; //what Stackexchange uses
+    private static readonly JsonSerializerOptions json = new();
 
-    public RedConn(string connectionString = "localhost:6379")
+    public RedConn(ConnectionMultiplexer conn)
     {
-        conn = ConnectionMultiplexer.Connect(connectionString);
-        db = conn.GetDatabase();
+        this.db = conn.GetDatabase();
     }
 
     public RedisValue? Get(string key)
@@ -20,14 +20,29 @@ public class RedConn : IDisposable
         return value.HasValue ? value : string.Empty;
     }
 
-    public void Set(string key, string value)
+    public void Set(string key, string value, TimeSpan ttl)
     {
-        this.db.StringSet(key, value);
+        this.db.StringSet(key, value, ttl);
     }
 
-    public void Dispose()
+    public T? GetJson<T>(string key)
     {
-        this.conn.Close();
-        this.conn.Dispose();
+        RedisValue value = this.db.StringGet(key);
+        if (!value.HasValue) { return default; }
+
+        return JsonSerializer.Deserialize<T>(value, RedConn.json);
+    }
+
+    public void SetJson<T>(string key, T payload, TimeSpan ttl)
+    {
+        var value = JsonSerializer.Serialize(payload, RedConn.json);
+        this.db.StringSet(key, value, ttl);
+    }
+
+    public async Task<bool> FlushAllAsync()
+    {
+        var cmd = this.db.ExecuteAsync("FLUSHDB", "ASYNC");
+        RedisResult result = await cmd;
+        return result.ToString() == "OK" ? true : false;
     }
 }

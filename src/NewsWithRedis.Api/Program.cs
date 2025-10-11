@@ -1,10 +1,11 @@
 
 using Microsoft.AspNetCore.DataProtection.Repositories;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using StackExchange.Redis;
 using Microsoft.IdentityModel.Tokens;
 using NewsWithRedis.Common.Models;
 using NewsWithRedis.Infrastructure.Clients.SQL;
-using System.Data.SqlTypes;
+using NewsWithRedis.Infrastructure.Clients.RED;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace NewsWithRedis.Api
 {
@@ -17,12 +18,21 @@ namespace NewsWithRedis.Api
             // Add services to the container.
             builder.Services.AddAuthorization();
             builder.Services.AddScoped<SqlClient>(x =>
-            {
-                var cString = builder.Configuration["cStrings.SQl.DefaultConnection"];
+            { // Could replace Json here for more speed
+                var cString = builder.Configuration["cStrings:SQl:DefaultConnection"];
                 return new SqlClient(cString!);
             });
+            builder.Services.AddSingleton<ConnectionMultiplexer>(y => {
+                var cString = builder.Configuration["cStrings:RED.DefaultConnection"];
+                return ConnectionMultiplexer.Connect(cString!);
+            });
+            builder.Services.AddScoped<RedConn>(y =>
+            {
+                return new RedConn(y.GetRequiredService<ConnectionMultiplexer>());
+            });
 
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+            // https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
             var app = builder.Build();
@@ -72,6 +82,42 @@ namespace NewsWithRedis.Api
             {
                 var articles = await repository.GetAllAsync<Artical>();
                 return articles.IsNullOrEmpty() ? Results.NotFound() : Results.Ok(articles);
+            });
+
+            app.MapGet("/Api/Cache/Articles/{id}", async (int id, RedConn cache, SqlClient repository) =>
+            {
+                var key = $"user:{id}"; //Redis Key formating
+
+                var cached = cache.GetJson<Artical>(key);
+                if (cached is not null) { return Results.Ok((data: cached, source: "Redis")); }
+
+                var article = await repository.GetAsync<Artical>(id);
+                if (article is null) { return Results.NotFound(); };
+
+                cache.SetJson(key, article, TimeSpan.FromMinutes(15));
+                return Results.Ok((data: article, source: "SQL"));
+            });
+
+            app.MapGet("/Api/Cache/Articles/ALL", async (RedConn cache, SqlClient repository) =>
+            {
+                var key = "user:all"; //this is cringe of DataSet grows
+
+                var cached = cache.GetJson<List<Artical>>(key);
+                if (!cached.IsNullOrEmpty()) { return Results.Ok((data: cached, Source: "Redis")); }
+
+                var articles = (await repository.GetAllAsync<Artical>()).ToList();
+                if (articles.IsNullOrEmpty()) { return Results.NotFound();}
+
+                cache.SetJson(key, articles, TimeSpan.FromMinutes(15));
+                return Results.Ok((data: articles, source: "SQL"));
+            });
+
+            app.MapGet("/Api/Cache/Reset", async (RedConn cache) =>
+            {
+                var result = await cache.FlushAllAsync();
+                return result is true 
+                    ? Results.Ok("Flushed OK!")
+                    : Results.Problem("Something went wrong while flushing");
             });
 
             app.Run();
