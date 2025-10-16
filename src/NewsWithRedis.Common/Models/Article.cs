@@ -1,7 +1,7 @@
 
 namespace NewsWithRedis.Common.Models;
 
-public class Artical
+public class Article
 {
   public required string Title {get; set; }
   public required int AuthorId { get; set; }
