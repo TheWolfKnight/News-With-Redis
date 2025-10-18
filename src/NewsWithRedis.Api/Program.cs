@@ -1,5 +1,6 @@
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
+using NewsWithRedis.Common.DTOs;
 using NewsWithRedis.Common.Models;
 using NewsWithRedis.Infrastructure.Clients.RED;
 using NewsWithRedis.Infrastructure.Clients.SQL;
@@ -42,35 +43,9 @@ namespace NewsWithRedis.Api
 
             app.UseAuthorization();
 
-            //------------- Straight Endpoints ------------------//
-
-            app.MapGet("/Api/Users/{id}", async (int id, SqlClient repository) =>
-            {
-                var user = await repository.GetAsync<User>(id);
-                return user is null ? Results.NotFound() : Results.Ok(user);
-            });
-
-            app.MapGet("/Api/Users/All", async (SqlClient repository) =>
-            {
-                var users = await repository.GetAllAsync<User>();
-                return users.IsNullOrEmpty() ? Results.NotFound() : Results.Ok(users);
-            });
-
-            app.MapGet("/Api/Articles/{id}", async (int id, SqlClient repository) =>
-            {
-                var article = await repository.GetAsync<Article>(id);
-                return article is null ? Results.NotFound() : Results.Ok(article);
-            });
-
-            app.MapGet("/Api/Articles/ALL", async (SqlClient repository) =>
-            {
-                var articles = await repository.GetAllAsync<Article>();
-                return articles.IsNullOrEmpty() ? Results.NotFound() : Results.Ok(articles);
-            });
-
             //-------------- With Cache Aside ------------------//
 
-            app.MapGet("/Api/Cache/Users/{id}", async (int id, RedConn cache, SqlClient repository) =>
+            app.MapGet("/api/users/{id}", async (int id, RedConn cache, SqlClient repository) =>
             {
                 var key = $"user:{id}";
 
@@ -84,7 +59,7 @@ namespace NewsWithRedis.Api
                 return Results.Ok(Response.From(user, "SQL"));
             });
 
-            app.MapGet("/Api/Cache/Users/ALL", async (RedConn cache, SqlClient repository) =>
+            app.MapGet("/api/users", async (RedConn cache, SqlClient repository) =>
             {
                 var key = $"user:all";
 
@@ -99,7 +74,7 @@ namespace NewsWithRedis.Api
                 return Results.Ok(Response.From(users, "SQL"));
             });
 
-            app.MapGet("/Api/Cache/Articles/{id}", async (int id, RedConn cache, SqlClient repository) =>
+            /*app.MapGet("/api/articles/{id}", async (int id, RedConn cache, SqlClient repository) =>
             {
                 var key = $"article:{id}"; //Redis Key formating
 
@@ -111,9 +86,23 @@ namespace NewsWithRedis.Api
 
                 cache.SetJson(key, article, TimeSpan.FromMinutes(15));
                 return Results.Ok(Response.From(article, "SQL"));
+            });*/
+
+            app.MapGet("/api/articles/{id}", async (int id, RedConn cache, SqlClient respository) => //with-comments
+            {
+                var key = $"article:{id}:with-comments";
+
+                var cached = cache.GetJson<WithChildrenDTO<Article, Comment>>(key);
+                if (cached is not null) { return Results.Ok(Response.From(cached, "Redis")); }
+
+                var result = await respository.GetParentChildrenAsync<Article, Comment>(id);
+                if (result is null) { return Results.NotFound(); }
+
+                cache.SetJson(key, result, TimeSpan.FromSeconds(15));
+                return Results.Ok(Response.From(result, "SQL"));
             });
 
-            app.MapGet("/Api/Cache/Articles/ALL", async (RedConn cache, SqlClient repository) =>
+            app.MapGet("/api/articles", async (RedConn cache, SqlClient repository) =>
             {
                 var key = "article:all"; //this is cringe if DataSet grows
 
@@ -127,7 +116,7 @@ namespace NewsWithRedis.Api
                 return Results.Ok(Response.From(articles, "SQL"));
             });
 
-            app.MapGet("/Api/Cache/Reset", async (RedConn cache) =>
+            app.MapPost("/api/reset", async (RedConn cache) =>
             {
                 var result = await cache.FlushAllAsync();
                 return result is true 
