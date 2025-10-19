@@ -10,7 +10,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsWithRedis.Application",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsWithRedis.Api", "src\NewsWithRedis.Api\NewsWithRedis.Api.csproj", "{8E3FFCDF-B28C-4C3A-8247-DB71B4F3181D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsWithRedis.Infrastructure", "src\NewWithRedis.Infrastructure\NewsWithRedis.Infrastructure.csproj", "{AA531D41-3E25-4BED-BC46-0C6350C28763}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsWithRedis.Infrastructure", "src\NewsWithRedis.Infrastructure\NewsWithRedis.Infrastructure.csproj", "{AA531D41-3E25-4BED-BC46-0C6350C28763}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

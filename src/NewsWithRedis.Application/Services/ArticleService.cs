@@ -11,6 +11,8 @@ namespace NewsWithRedis.Application.Services;
 
 internal class ArticleService : IArticleService
 {
+  private sealed record ResponseWithSource<TData>(TData Data, string Source);
+
   private readonly IHttpClientFactory _factory;
 
   public ArticleService(IHttpClientFactory factory)
@@ -18,7 +20,7 @@ internal class ArticleService : IArticleService
     _factory = factory;
   }
 
-  public async Task<Article> GetArticalAsync(int articleId, CancellationToken cancellationToken = default)
+  public async Task<Article> GetArticleAsync(int articleId, CancellationToken cancellationToken = default)
   {
     string url = $"api/article/{articleId}";
 
@@ -28,20 +30,23 @@ internal class ArticleService : IArticleService
       HttpResponseMessage response = await client.GetAsync(url, cancellationToken);
       response.EnsureSuccessStatusCode();
 
-      Article? artical = await JsonSerializer.DeserializeAsync<Article>(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
-      if (artical is null)
+      ResponseWithSource<Article>? article = await JsonSerializer.DeserializeAsync<ResponseWithSource<Article>>(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+
+      if (article is null)
         throw new InvalidOperationException("Could not deserialize Artical response");
 
-      return artical;
+      Console.WriteLine($" [INFO: Application::ArticleService::GetArticleAsync] article source: {article.Source}");
+
+      return article.Data;
     }
     catch (Exception e)
     {
-      Console.WriteLine($" [ERROR: Application::ArticalService::GetArticalAsync] message: {e.Message}");
+      Console.WriteLine($" [ERROR: Application::ArticleService::GetArticleAsync] message: {e.Message}");
       throw e;
     }
   }
 
-  public async Task<IEnumerable<Article>> GetArticalsAsync(CancellationToken cancellationToken = default)
+  public async Task<IEnumerable<Article>> GetArticlesAsync(CancellationToken cancellationToken = default)
   {
     string url = "api/article";
 
@@ -51,13 +56,18 @@ internal class ArticleService : IArticleService
       HttpResponseMessage response = await client.GetAsync(url, cancellationToken);
       response.EnsureSuccessStatusCode();
 
-      IEnumerable<Article> articals = await JsonSerializer.DeserializeAsync<IEnumerable<Article>>(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken) ?? [];
+      ResponseWithSource<IEnumerable<Article>>? articles = await JsonSerializer.DeserializeAsync<ResponseWithSource<IEnumerable<Article>>>(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
 
-      return articals;
+      if (articles is null)
+        throw new InvalidOperationException("Could not deserialize articles from response");
+
+      Console.WriteLine($" [INFO: Application::ArticleService::GetArticlesAsync] articles source: {articles.Source}");
+
+      return articles.Data;
     }
     catch (Exception e)
     {
-      Console.WriteLine($" [ERROR Application::ArticalService::GetArticals] message: {e.Message}");
+      Console.WriteLine($" [ERROR: Application::ArticleService::GetArticles] message: {e.Message}");
       throw e;
     }
   }

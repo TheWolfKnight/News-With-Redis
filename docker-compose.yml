@@ -11,21 +11,60 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - redis-task-network
     ports:
-      - 6379:6379
-    #volumes:
-    #  - ./data/redis-data:/data
+      - 56379:6379
+    volumes:
+      - ./data/redis-data:/data
     environment:
-      - REDIS_PASSWORD=yourStrong(!)Password
+      - REDIS_PASSWORD=Password123!
       - REDIS_PORT=6379
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Password123!", "-Q", "SELECT 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - redis-task-network
+    ports:
+      - 51433:1433
+    volumes:
+      - ./data/mssql-data:/var/opt/mssql/data
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Password123!
+      - MSSQL_PID=Developer
 
   redis-insight:
     image: redis/redisinsight
     restart: unless-stopped
     depends_on:
       - redis
+    networks:
+      - redis-task-network
     ports:
-      - 8085:5540
+      - 55540:5540
     environment:
       - RI_REDIS_HOST=redis
       - RI_REDIS_PORT=6379
+
+  news-with-redis-api:
+    build:
+      dockerfile: NewsWithRedis.Api/Dockerfile
+      context: src
+      no_cache: true
+    depends_on:
+      - mssql
+      - redis
+    environment:
+      - REDIS_CONNECTION=redis:6379
+      - MSSQL_SQL_STRING=Data Source=mssql,1433;Database=NewsWithRedis;User ID=sa;Password=Password123!;Encrypt=False;Trust Server Certificate=False;Authentication=SqlPassword;Application Name=news with redis;Connect Retry Count=3;Connect Retry Interval=10;Command Timeout=30;Integrated Security=false
+    networks:
+      - redis-task-network
+    ports:
+      - 51003:8080

@@ -1,5 +1,4 @@
 using StackExchange.Redis;
-using System;
 using System.Text.Json;
 
 namespace NewsWithRedis.Infrastructure.Clients.RED;

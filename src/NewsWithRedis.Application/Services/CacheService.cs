@@ -27,7 +27,7 @@ public class CacheService : ICacheService
     }
     catch (Exception e)
     {
-      Console.WriteLine($" [ERROR Application::CacheService::ResetCacheAsync] message: {e.Message}");
+      Console.WriteLine($" [ERROR: Application::CacheService::ResetCacheAsync] message: {e.Message}");
 
       throw e;
     }

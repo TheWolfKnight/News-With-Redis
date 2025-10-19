@@ -11,6 +11,8 @@ namespace NewsWithRedis.Application.Services;
 
 internal class UserService : IUserService
 {
+  private sealed record ResponseWithSource<TData>(TData Data, string Source);
+
   private IHttpClientFactory _factory;
 
   public UserService(IHttpClientFactory factory)
@@ -28,13 +30,18 @@ internal class UserService : IUserService
       HttpResponseMessage response = await client.GetAsync(url, cancellationToken);
       response.EnsureSuccessStatusCode();
 
-      IEnumerable<User> users = await JsonSerializer.DeserializeAsync<IEnumerable<User>>(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken) ?? [];
+      ResponseWithSource<IEnumerable<User>>? users = await JsonSerializer.DeserializeAsync<ResponseWithSource<IEnumerable<User>>>(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
 
-      return users;
+      if (users is null)
+        throw new InvalidOperationException("Could not deserialize the users from response");
+
+      Console.WriteLine($" [INFO: Application::UserService::GetUsersAsync] Users sources: {users.Source}");
+
+      return users.Data;
     }
     catch (Exception e)
     {
-      Console.WriteLine($" [ERROR Application::UserService::GetUserInfoAsync] message: {e.Message}");
+      Console.WriteLine($" [ERROR: Application::UserService::GetUserInfoAsync] message: {e.Message}");
       throw e;
     }
   }
@@ -49,16 +56,18 @@ internal class UserService : IUserService
       HttpResponseMessage response = await client.GetAsync(url, cancellationToken);
       response.EnsureSuccessStatusCode();
 
-      User? user = await JsonSerializer.DeserializeAsync<User>(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+      ResponseWithSource<User>? user = await JsonSerializer.DeserializeAsync<ResponseWithSource<User>>(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
 
       if (user is null)
         throw new InvalidOperationException("Could not deserialize user from response");
 
-      return user;
+      Console.WriteLine($" [INFO: Application::UserService::GetUserInfoAsync] Data source: {user.Source}");
+
+      return user.Data;
     }
     catch (Exception e)
     {
-      Console.WriteLine($" [ERROR Application::UserService::GetUserInfoAsync] message: {e.Message}");
+      Console.WriteLine($" [ERROR: Application::UserService::GetUserInfoAsync] message: {e.Message}");
       throw e;
     }
   }

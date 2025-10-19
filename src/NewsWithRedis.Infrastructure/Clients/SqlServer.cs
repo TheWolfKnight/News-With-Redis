@@ -1,7 +1,7 @@
 using Dapper;
 using System.Data;
 using Microsoft.Data.SqlClient;
-using NewsWithRedis.Common.DTOs;
+using NewsWithRedis.Common.Dtos;
 
 namespace NewsWithRedis.Infrastructure.Clients.SQL;
 
@@ -33,7 +33,7 @@ public sealed class SqlClient
         return await conn.QueryAsync<T>(sql);
     }
 
-    public async Task<WithChildrenDTO<TParent, TChild>?> 
+    public async Task<WithChildrenDto<TParent, TChild>?> 
         GetParentChildrenAsync<TParent, TChild>(int id)
     {
         string parentTable = typeof(TParent).Name;
@@ -50,6 +50,6 @@ public sealed class SqlClient
         var parent = await multi.ReadSingleOrDefaultAsync<TParent>();
         if (parent is null) { return null; }
         var children = (await multi.ReadAsync<TChild>()).ToList();
-        return new WithChildrenDTO<TParent, TChild> ( parent, children );
+        return new WithChildrenDto<TParent, TChild> ( parent, children );
     }
 }

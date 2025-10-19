@@ -7,6 +7,6 @@ namespace NewsWithRedis.Application.Interfaces;
 
 public interface IArticleService
 {
-  Task<IEnumerable<Article>> GetArticalsAsync(CancellationToken cancellationToken = default);
-  Task<Article> GetArticalAsync(int articleId, CancellationToken cancellationToken = default);
+  Task<IEnumerable<Article>> GetArticlesAsync(CancellationToken cancellationToken = default);
+  Task<Article> GetArticleAsync(int articleId, CancellationToken cancellationToken = default);
 }

@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NewsWithRedis.Common\NewsWithRedis.Common.csproj" />
-    <ProjectReference Include="..\NewWithRedis.Infrastructure\NewsWithRedis.Infrastructure.csproj" />
+    <ProjectReference Include="..\NewsWithRedis.Infrastructure\NewsWithRedis.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
