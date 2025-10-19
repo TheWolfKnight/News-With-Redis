@@ -39,9 +39,9 @@ internal class UserService : IUserService
     }
   }
 
-  public async Task<User> GetUserInfoAsync (string username, CancellationToken cancellationToken = default)
+  public async Task<User> GetUserInfoAsync (int userId, CancellationToken cancellationToken = default)
   {
-    string url = $"api/user/{username}";
+    string url = $"api/user/{userId}";
 
     try
     {

@@ -45,7 +45,7 @@ namespace NewsWithRedis.Api
 
             //-------------- With Cache Aside ------------------//
 
-            app.MapGet("/api/users/{id}", async (int id, RedConn cache, SqlClient repository) =>
+            app.MapGet("/api/user/{id}", async (int id, RedConn cache, SqlClient repository) =>
             {
                 var key = $"user:{id}";
 
@@ -59,7 +59,7 @@ namespace NewsWithRedis.Api
                 return Results.Ok(Response.From(user, "SQL"));
             });
 
-            app.MapGet("/api/users", async (RedConn cache, SqlClient repository) =>
+            app.MapGet("/api/user", async (RedConn cache, SqlClient repository) =>
             {
                 var key = $"user:all";
 
@@ -88,7 +88,7 @@ namespace NewsWithRedis.Api
                 return Results.Ok(Response.From(article, "SQL"));
             });*/
 
-            app.MapGet("/api/articles/{id}", async (int id, RedConn cache, SqlClient respository) => //with-comments
+            app.MapGet("/api/article/{id}", async (int id, RedConn cache, SqlClient respository) => //with-comments
             {
                 var key = $"article:{id}:with-comments";
 
@@ -102,7 +102,7 @@ namespace NewsWithRedis.Api
                 return Results.Ok(Response.From(result, "SQL"));
             });
 
-            app.MapGet("/api/articles", async (RedConn cache, SqlClient repository) =>
+            app.MapGet("/api/article", async (RedConn cache, SqlClient repository) =>
             {
                 var key = "article:all"; //this is cringe if DataSet grows
 
@@ -116,7 +116,7 @@ namespace NewsWithRedis.Api
                 return Results.Ok(Response.From(articles, "SQL"));
             });
 
-            app.MapPost("/api/reset", async (RedConn cache) =>
+            app.MapDelete("/api/cache", async (RedConn cache) =>
             {
                 var result = await cache.FlushAllAsync();
                 return result is true 
