@@ -1,0 +1,56 @@
+﻿@page "/article/{AuthorId:int}/{Title}"
+
+<h3>Artikel</h3>
+
+@if (error is not null)
+{
+    <p class="text-danger">@error</p>
+}
+else if (item is null)
+{
+    <p>Loading…</p>
+}
+else
+{
+    <div class="mb-2"><span class="badge bg-secondary">Source: @source</span></div>
+    <h4>@item.Title</h4>
+    <div class="text-muted mb-3">
+        Author @item.AuthorId • @item.CreatedAt.ToLocalTime():g
+    </div>
+    <article>@item.Content</article>
+}
+
+@code {
+    [Parameter] public int AuthorId { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+
+    private Artical? item;   // <- dette er modellen fra Models
+    private string? source;
+    private string? error;
+
+    [Inject] private IArticlesApi Api { get; set; } = default!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        error = null; item = null; source = null;
+
+        try
+        {
+            var listRes = await Api.GetAllAsync();
+            var match = listRes.Items.FirstOrDefault(a =>
+                a.AuthorId == AuthorId &&
+                string.Equals(a.Title, Title, StringComparison.OrdinalIgnoreCase));
+
+            if (match is null)
+            {
+                error = "Artiklen blev ikke fundet.";
+                return;
+            }
+
+            var detailRes = await Api.GetByIdAsync(match.Id);
+            item = detailRes.Item;
+            source = detailRes.Source;
+        }
+        catch (Exception ex) { error = ex.Message; }
+    }
+}

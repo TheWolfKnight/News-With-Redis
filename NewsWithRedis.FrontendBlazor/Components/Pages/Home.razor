@@ -1,0 +1,34 @@
+﻿@page "/"
+
+<h2>Artikler</h2>
+
+@if (items is null)
+{
+    <p>Loading…</p>
+}
+else
+{
+    <div class="mb-2"><span class="badge bg-secondary">Source: @source</span></div>
+    <ul class="list-group">
+        @foreach (var a in items)
+        {
+            <li class="list-group-item">
+                <a href="@($"/article/{a.AuthorId}/{Uri.EscapeDataString(a.Title)}")">@a.Title</a>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private List<Artical>? items;
+    private string? source;
+
+    [Inject] private IArticlesApi Api { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await Api.GetAllAsync();
+        items = res.Items;
+        source = res.Source;
+    }
+}
