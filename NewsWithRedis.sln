@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsWithRedis.Common", "src\NewsWithRedis.Common\NewsWithRedis.Common.csproj", "{29D00964-4AA6-4309-94A1-94BC3ED4E0C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsWithRedis.FrontendBlazor", "NewsWithRedis.FrontendBlazor\NewsWithRedis.FrontendBlazor.csproj", "{618AFC0E-4496-46A3-9713-19579B8FB061}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsWithRedis.FrontendBlazor", "src\NewsWithRedis.FrontendBlazor\NewsWithRedis.FrontendBlazor.csproj", "{618AFC0E-4496-46A3-9713-19579B8FB061}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
