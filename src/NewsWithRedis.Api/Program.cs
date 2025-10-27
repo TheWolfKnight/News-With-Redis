@@ -1,4 +1,5 @@
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 using StackExchange.Redis;
 using NewsWithRedis.Common.DTOs;
 using NewsWithRedis.Common.Models;
@@ -20,7 +21,8 @@ namespace NewsWithRedis.Api
                 var cString = builder.Configuration["cStrings:SQl:DefaultConnection"];
                 return new SqlClient(cString!);
             });
-            builder.Services.AddSingleton<ConnectionMultiplexer>(y => {
+            builder.Services.AddSingleton<ConnectionMultiplexer>(y =>
+            {
                 var cString = builder.Configuration["cStrings:RED:DefaultConnection"];
                 return ConnectionMultiplexer.Connect(cString!);
             });
@@ -42,6 +44,14 @@ namespace NewsWithRedis.Api
             }
 
             app.UseAuthorization();
+
+            app.Use(async (context, next) =>
+            {
+                var watch = Stopwatch.StartNew();
+                await next();
+                watch.Stop();
+                Console.WriteLine($"{context.Request.Path} : {watch.ElapsedMilliseconds}");
+            });
 
             //-------------- With Cache Aside ------------------//
 
@@ -110,7 +120,7 @@ namespace NewsWithRedis.Api
                 if (!cached.IsNullOrEmpty()) { return Results.Ok(Response.From(cached, "Redis")); }
 
                 var articles = (await repository.GetAllAsync<Article>()).ToList();
-                if (articles.IsNullOrEmpty()) { return Results.NotFound();}
+                if (articles.IsNullOrEmpty()) { return Results.NotFound(); }
 
                 cache.SetJson(key, articles, TimeSpan.FromMinutes(15));
                 return Results.Ok(Response.From(articles, "SQL"));
@@ -119,7 +129,7 @@ namespace NewsWithRedis.Api
             app.MapPost("/api/reset", async (RedConn cache) =>
             {
                 var result = await cache.FlushAllAsync();
-                return result is true 
+                return result is true
                     ? Results.Ok("Flushed OK!")
                     : Results.Problem("Something went wrong while flushing");
             });
