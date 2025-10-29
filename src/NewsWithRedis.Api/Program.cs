@@ -126,6 +126,20 @@ namespace NewsWithRedis.Api
                 return Results.Ok(Response.From(articles, "SQL"));
             });
 
+            app.MapGet("/api/articles/hash/{id}", async (int id, RedConn cache, SqlClient repository) =>
+            {
+                var key = $"article:{id}";
+
+                var cached = new WithChildrenDTO<Article, Comment>(await cache.GetHash<Article>(key), await cache.GetHashSet<Comment>(key));
+                if (cached.Parent is not null || (cached.Children?.Count ?? 0) > 0) { return Results.Ok(Response.From(cached, "Redis")); }
+
+                var result = await repository.GetParentChildrenAsync<Article, Comment>(id);
+                if (result is null) { return Results.NotFound(); }
+
+                await cache.SetHashParentChildren(key, result.Parent, result.Children, TimeSpan.FromSeconds(15));
+                return Results.Ok(Response.From(result, "SQL"));
+            });
+
             app.MapPost("/api/reset", async (RedConn cache) =>
             {
                 var result = await cache.FlushAllAsync();
